@@ -1160,63 +1160,27 @@ class AuxPort {
         return;
       }
 
-      // Configure RS422 direction pins
-      // If AUX pins are specified, use those; otherwise fall back to hardcoded pins
-      if (config_.uart.rs422_re_pin >= 0 && 
-          config_.uart.rs422_re_pin < static_cast<int8_t>(pin_count_)) {
-        // Check that the pin is not already configured for another use
-        if (config_.pins[config_.uart.rs422_re_pin].mode != aux::Pin::kNC) {
-          status_.error = aux::AuxError::kUartPinError;
-          return;
-        }
-        // Use configured AUX pin for RE
-        const auto re_pin = [&]() {
-          for (const auto& pin : hw_config_.pins) {
-            if (pin.number == config_.uart.rs422_re_pin) {
-              return pin.mbed;
-            }
+      // RS422 direction pins are now configured through the pin configuration system
+      // Check if RS422 is enabled but no RS422 pins are configured
+      if (config_.uart.rs422) {
+        bool has_rs422_pins = false;
+        for (size_t i = 0; i < pin_count_; i++) {
+          if (config_.pins[i].mode == aux::Pin::Mode::kRs422Re ||
+              config_.pins[i].mode == aux::Pin::Mode::kRs422De) {
+            has_rs422_pins = true;
+            break;
           }
-          return NC;
-        }();
-        if (re_pin != NC) {
-          rs422_re_.emplace(re_pin, 1);
         }
-      } else if (hw_config_.options.rs422_re != NC) {
-        // Fall back to hardcoded pin
-        rs422_re_.emplace(hw_config_.options.rs422_re, 1);
-      }
-
-      if (config_.uart.rs422_de_pin >= 0 && 
-          config_.uart.rs422_de_pin < static_cast<int8_t>(pin_count_)) {
-        // Check that the pin is not already configured for another use
-        if (config_.pins[config_.uart.rs422_de_pin].mode != aux::Pin::kNC) {
-          status_.error = aux::AuxError::kUartPinError;
-          return;
-        }
-        // Use configured AUX pin for DE
-        const auto de_pin = [&]() {
-          for (const auto& pin : hw_config_.pins) {
-            if (pin.number == config_.uart.rs422_de_pin) {
-              return pin.mbed;
-            }
+        // If no RS422 pins are configured, fall back to hardcoded pins
+        if (!has_rs422_pins) {
+          if (hw_config_.options.rs422_re != NC) {
+            rs422_re_.emplace(hw_config_.options.rs422_re, 1);
           }
-          return NC;
-        }();
-        if (de_pin != NC) {
-          rs422_de_.emplace(de_pin, 0);
+          if (hw_config_.options.rs422_de != NC) {
+            rs422_de_.emplace(hw_config_.options.rs422_de, 0);
+          }
         }
-      } else if (hw_config_.options.rs422_de != NC) {
-        // Fall back to hardcoded pin
-        rs422_de_.emplace(hw_config_.options.rs422_de, 0);
       }
-
-      if (config_.uart.rs422 && (!rs422_de_ || !rs422_re_)) {
-        status_.error = aux::AuxError::kUartPinError;
-        return;
-      }
-
-      if (rs422_de_) { rs422_de_->write(config_.uart.rs422); }
-      if (rs422_re_) { rs422_re_->write(!config_.uart.rs422); }
 
       uart_.emplace(
           [&]() {
@@ -1259,6 +1223,49 @@ class AuxPort {
       }
 
       updated_any_isr = true;
+    }
+
+    // Process pin configurations first to set up RS422 pins
+    for (size_t i = 0; i < pin_count_; i++) {
+      const auto cfg = config_.pins[i];
+      const auto first_mbed = [&]() {
+          for (const auto& pin : hw_config_.pins) {
+            if (pin.number == static_cast<int>(i)) {
+              return pin.mbed;
+            }
+          }
+          return NC;
+      }();
+      
+      if (cfg.mode == aux::Pin::Mode::kRs422Re) {
+        // Configure RS422 Receive Enable pin
+        if (first_mbed == NC) {
+          status_.error = aux::AuxError::kUartPinError;
+          return;
+        }
+        rs422_re_.emplace(first_mbed, 1);  // Default to high (receive enabled)
+        if (config_.uart.rs422) {
+          rs422_re_->write(!config_.uart.rs422);  // Invert: low when transmitting
+        }
+      } else if (cfg.mode == aux::Pin::Mode::kRs422De) {
+        // Configure RS422 Drive Enable pin
+        if (first_mbed == NC) {
+          status_.error = aux::AuxError::kUartPinError;
+          return;
+        }
+        rs422_de_.emplace(first_mbed, 0);  // Default to low (drive disabled)
+        if (config_.uart.rs422) {
+          rs422_de_->write(config_.uart.rs422);  // High when transmitting
+        }
+      }
+    }
+
+    // Validate RS422 configuration
+    if (config_.uart.rs422 && config_.uart.mode != aux::UartEncoder::Config::kDisabled) {
+      if (!rs422_de_ || !rs422_re_) {
+        status_.error = aux::AuxError::kUartPinError;
+        return;
+      }
     }
 
     for (size_t i = 0; i < pin_count_; i++) {
@@ -1307,6 +1314,10 @@ class AuxPort {
         status_.gpio_bit_active |= (1 << i);
         pwm_[i].emplace(first_mbed, pwm_timer);
         updated_any_isr = true;
+      } else if (cfg.mode == aux::Pin::Mode::kRs422Re ||
+                 cfg.mode == aux::Pin::Mode::kRs422De) {
+        // RS422 pins are handled in the earlier loop, skip here
+        continue;
       } else if (cfg.mode == aux::Pin::Mode::kAnalogInput ||
                  cfg.mode == aux::Pin::Mode::kSine ||
                  cfg.mode == aux::Pin::Mode::kCosine) {

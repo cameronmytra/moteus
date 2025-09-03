@@ -272,10 +272,10 @@ supported.
 The moteus-n1 and moteus-x1 additionally have a hardware RS422
 transceiver which can be enabled through configuration. By default,
 the RS422 direction control pins are hardcoded, but they can be 
-configured to use any available AUX pins through the `rs422_re_pin` 
-and `rs422_de_pin` settings. RS485 devices like the CUI AMT21x can be 
-used if the RS422 pin Y is connected to A and RS422 pin Z is connected 
-to B.
+configured to use any available AUX pins by setting specific pins
+to RS422 Receive Enable (mode 18) and RS422 Drive Enable (mode 19).
+RS485 devices like the CUI AMT21x can be used if the RS422 pin Y is 
+connected to A and RS422 pin Z is connected to B.
 
 ### Pin Options ###
 
@@ -2087,6 +2087,8 @@ Selects what functionality will be used on the given pin.
 * 15 - Digital output (not implemented)
 * 16 - Analog input
 * 17 - PWM output
+* 18 - RS422 Receive Enable
+* 19 - RS422 Drive Enable
 
 ## `aux[12].pins.X.pull` ##
 
@@ -2172,32 +2174,20 @@ position information.
 
 ## `aux[12].uart.rs422` ##
 
-Enable the RS422 transceiver.  When enabled, the RS422 direction pins
-must be configured using `rs422_re_pin` and `rs422_de_pin`.
-
-## `aux[12].uart.rs422_re_pin` ##
-
-The AUX pin number (0-based) to use for the RS422 receive enable signal.
-Set to -1 to use the default hardcoded pin (if available). When set to a 
-valid AUX pin number (0-4), that AUX pin will be configured as a digital 
-output to control when the RS422 transceiver is in receive mode.
-
-## `aux[12].uart.rs422_de_pin` ##
-
-The AUX pin number (0-based) to use for the RS422 drive enable signal.
-Set to -1 to use the default hardcoded pin (if available). When set to a 
-valid AUX pin number (0-4), that AUX pin will be configured as a digital 
-output to control when the RS422 transceiver is in transmit mode.
+Enable the RS422 transceiver. When enabled, the RS422 direction pins
+must be configured using the pin configuration system by setting specific
+pins to RS422 Receive Enable (mode 18) and RS422 Drive Enable (mode 19).
+If no RS422 pins are configured via the pin system, the controller will
+fall back to using hardcoded pins if available.
 
 Example configuration for using AUX pins 3 and 4 for RS422 direction control:
 ```
 conf set aux1.uart.mode 4          # CUI AMT21x RS422 encoder
 conf set aux1.uart.rs422 1         # Enable RS422
-conf set aux1.uart.rs422_re_pin 3  # Use AUX pin 3 for receive enable
-conf set aux1.uart.rs422_de_pin 4  # Use AUX pin 4 for drive enable
 conf set aux1.pins.1.mode 8        # Set pin 1 to UART RX
 conf set aux1.pins.2.mode 8        # Set pin 2 to UART TX
-# Note: pins 3 and 4 will be automatically configured as digital outputs
+conf set aux1.pins.3.mode 18       # Set pin 3 to RS422 Receive Enable
+conf set aux1.pins.4.mode 19       # Set pin 4 to RS422 Drive Enable
 ```
 
 ## `aux[12].uart.cui_amt21_address` ##

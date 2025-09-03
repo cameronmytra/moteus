@@ -102,10 +102,6 @@ struct UartEncoder {
     int32_t poll_rate_us = 100;
     bool rs422 = false;
     uint8_t cui_amt21_address = 0x54;
-    
-    // RS422 direction pin configuration (0-based pin numbers, -1 = NC)
-    int8_t rs422_re_pin = -1;  // Receive enable pin
-    int8_t rs422_de_pin = -1;  // Drive enable pin
 
     template <typename Archive>
     void Serialize(Archive* a) {
@@ -114,8 +110,6 @@ struct UartEncoder {
       a->Visit(MJ_NVP(poll_rate_us));
       a->Visit(MJ_NVP(rs422));
       a->Visit(MJ_NVP(cui_amt21_address));
-      a->Visit(MJ_NVP(rs422_re_pin));
-      a->Visit(MJ_NVP(rs422_de_pin));
     }
   };
 
@@ -346,6 +340,8 @@ struct Pin {
     kDigitalOutput,
     kAnalogInput,
     kPwmOut,
+    kRs422Re,
+    kRs422De,
 
     kLength,
   };
@@ -553,6 +549,8 @@ struct IsEnum<moteus::aux::Pin::Mode> {
         { P::kDigitalOutput, "digital_out" },
         { P::kAnalogInput, "analog_in" },
         { P::kPwmOut, "pwm_out" },
+        { P::kRs422Re, "rs422_re" },
+        { P::kRs422De, "rs422_de" },
       }};
   }
 };
