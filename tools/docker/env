@@ -18,4 +18,57 @@ docker run -it --rm \
   --mount "type=bind,src=$REPO_DIR,dst=/src" \
   --workdir /src \
   --platform linux/amd64 \
-  myimage bash
+  myimage bash -c "
+    # Set up a function to copy build outputs
+    copy_build_outputs() {
+      echo 'Copying build outputs to build_output folder...'
+      mkdir -p /src/build_output
+      
+      # Copy ELF files if they exist
+      if [ -f bazel-bin/fw/moteus.elf ]; then
+        cp bazel-bin/fw/moteus.elf /src/build_output/
+        echo 'Copied moteus.elf'
+      fi
+      
+      if [ -f bazel-bin/fw/can_bootloader.elf ]; then
+        cp bazel-bin/fw/can_bootloader.elf /src/build_output/
+        echo 'Copied can_bootloader.elf'
+      fi
+      
+      # Copy binary files if they exist
+      if [ -f bazel-bin/fw/moteus.08000000.bin ]; then
+        cp bazel-bin/fw/moteus.08000000.bin /src/build_output/
+        echo 'Copied moteus.08000000.bin'
+      fi
+      
+      if [ -f bazel-bin/fw/moteus.0800c000.bin ]; then
+        cp bazel-bin/fw/moteus.0800c000.bin /src/build_output/
+        echo 'Copied moteus.0800c000.bin'
+      fi
+      
+      if [ -f bazel-bin/fw/moteus.08010000.bin ]; then
+        cp bazel-bin/fw/moteus.08010000.bin /src/build_output/
+        echo 'Copied moteus.08010000.bin'
+      fi
+      
+      echo 'Build output copy complete!'
+    }
+    
+    # Add the copy function to the shell environment
+    export -f copy_build_outputs
+    
+    # Display helpful information
+    echo '============================================='
+    echo 'moteus Docker Build Environment'
+    echo '============================================='
+    echo 'Available commands:'
+    echo '  ./tools/bazel build --config=target //:target  # Build firmware'
+    echo '  copy_build_outputs                            # Copy outputs to build_output/'
+    echo '  ./tools/bazel build --config=target //:target && copy_build_outputs  # Build and copy'
+    echo ''
+    echo 'Build outputs will be copied to the build_output/ folder on the host.'
+    echo '============================================='
+    
+    # Start interactive bash session
+    exec bash
+  "

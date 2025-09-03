@@ -9,7 +9,7 @@ ENV TZ=UTC
 
 RUN apt-get update
 RUN apt-get install -y python3-pip python3-can python3-serial python3-setuptools python3-pyelftools python3-qtpy python3-wheel libncurses5
-RUN apt-get install -y curl patch git build-essential
+RUN apt-get install -y curl patch git build-essential openocd gcc-arm-none-eabi
 
 # RUN addgroup --gid $GROUP_ID user
 RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user

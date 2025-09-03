@@ -142,21 +142,21 @@ encoders for:
 A variety of hardware encoder types can be used to fulfill those
 functions.  Currently supported options include:
 
-| Name            | Interface Method | Max Resolution | Mounting    | Price     |
-|-----------------|------------------|----------------|-------------|-----------|
-| Onboard AS5047P | SPI (integrated) | 14 bits        | on-axis     | Included  |
-| AS5047x         | SPI              | 14 bits        | on-axis     | $         |
-| AS5048B         | I2C              | 14 bits        | on-axis     | $         |
-| AS5600          | I2C              | 12 bits        | on-axis     | $         |
-| AksIM-2         | RS422 w/ 5V      | 20 bits        | off-axis    | $$$       |
-| CUI AMT21x      | RS422 w/ 5V      | 14 bits        | shaft       | $$        |
-| CUI AMT22x      | SPI w/ 5V        | 14 bits        | shaft       | $$        |
-| MA600           | SPI              | 16 bits        | on/off-axis | $         |
-| MA732           | SPI              | 14 bits        | on/off-axis | $         |
-| iC-PZ           | SPI w/ 5V        | 22 bits        | off-axis    | $$$       |
-| Quadrature      | Quadrature       | N/A            | x           | x         |
-| Sine/Cosine     | Sine/Cosine      | 10 bits        | x           | x         |
-| Hall effect     | Hall effect      | x              | x           | $         |
+| Name            | Interface Method | Max Resolution | Mounting    | Price    |
+| --------------- | ---------------- | -------------- | ----------- | -------- |
+| Onboard AS5047P | SPI (integrated) | 14 bits        | on-axis     | Included |
+| AS5047x         | SPI              | 14 bits        | on-axis     | $        |
+| AS5048B         | I2C              | 14 bits        | on-axis     | $        |
+| AS5600          | I2C              | 12 bits        | on-axis     | $        |
+| AksIM-2         | RS422 w/ 5V      | 20 bits        | off-axis    | $$$      |
+| CUI AMT21x      | RS422 w/ 5V      | 14 bits        | shaft       | $$       |
+| CUI AMT22x      | SPI w/ 5V        | 14 bits        | shaft       | $$       |
+| MA600           | SPI              | 16 bits        | on/off-axis | $        |
+| MA732           | SPI              | 14 bits        | on/off-axis | $        |
+| iC-PZ           | SPI w/ 5V        | 22 bits        | off-axis    | $$$      |
+| Quadrature      | Quadrature       | N/A            | x           | x        |
+| Sine/Cosine     | Sine/Cosine      | 10 bits        | x           | x        |
+| Hall effect     | Hall effect      | x              | x           | $        |
 
 By default, the onboard magnetic encoder (AS5047P) is assumed to sense
 the rotor.  It is also used as the source for position and velocity of
@@ -270,10 +270,12 @@ A variety of asynchronous serial encoders and debugging facilities are
 supported.
 
 The moteus-n1 and moteus-x1 additionally have a hardware RS422
-transceiver connected to aux1's pins D and E which can be enabled
-through configuration.  RS485 devices like the CUI AMT21x can be used
-if the RS422 pin Y is connected to A and RS422 pin Z is connected to
-B.
+transceiver which can be enabled through configuration. By default,
+the RS422 direction control pins are hardcoded, but they can be 
+configured to use any available AUX pins through the `rs422_re_pin` 
+and `rs422_de_pin` settings. RS485 devices like the CUI AMT21x can be 
+used if the RS422 pin Y is connected to A and RS422 pin Z is connected 
+to B.
 
 ### Pin Options ###
 
@@ -282,7 +284,7 @@ The following table shows which pins can be used for the unique capabilities:
 #### AUX1 / ENC ####
 
 | moteus r4.5/8/11 | Con | Aux | SPI  | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
-|------------------|-----|-----|------|-------------|-----|-------------|------|-----|
+| ---------------- | --- | --- | ---- | ----------- | --- | ----------- | ---- | --- |
 | 3.3V  (3)        | 1   |     |      |             |     |             |      |     |
 | C                | 2   | 0   | X    |             |     |             |      | X   |
 | GND (G)          | 3   |     |      |             |     |             |      |     |
@@ -290,16 +292,16 @@ The following table shows which pins can be used for the unique capabilities:
 | I                | 5   | 2   | MISO | X           |     |             |      |     |
 | O                | 6   | 3   | MOSI | X           |     |             |      |     |
 
-| moteus c1/n1/x1  | Con | AUX | SPI  | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
-|------------------|-----|-----|------|-------------|-----|-------------|------|-----|
-| 5V (5)           | 1   |     |      |             |     |             |      |     |
-| 3.3V (3)         | 2   |     |      |             |     |             |      |     |
-| A                | 3   | 0   | CLK  | X           |     |             |      |     |
-| B *              | 4   | 1   | MISO |             |     | 3.1         | RX   |     |
-| C                | 5   | 2   | MOSI | X           |     | 3.2         |      |     |
-| D                | 6   | 3   |      |             | SCL | 2.1         | RX   | X   |
-| E                | 7   | 4   |      |             | SDA | 2.2         | TX   | X   |
-| GND (G)          | 8   |     |      |             |     |             |      |     |
+| moteus c1/n1/x1 | Con | AUX | SPI  | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
+| --------------- | --- | --- | ---- | ----------- | --- | ----------- | ---- | --- |
+| 5V (5)          | 1   |     |      |             |     |             |      |     |
+| 3.3V (3)        | 2   |     |      |             |     |             |      |     |
+| A               | 3   | 0   | CLK  | X           |     |             |      |     |
+| B *             | 4   | 1   | MISO |             |     | 3.1         | RX   |     |
+| C               | 5   | 2   | MOSI | X           |     | 3.2         |      |     |
+| D               | 6   | 3   |      |             | SCL | 2.1         | RX   | X   |
+| E               | 7   | 4   |      |             | SDA | 2.2         | TX   | X   |
+| GND (G)         | 8   |     |      |             |     |             |      |     |
 
 NOTE: For moteus n1, the B pin software configured pullup cannot be
 used effectively.  Thus the B pin is unsuitable for open-drain inputs
@@ -311,24 +313,24 @@ pullups are not available on moteus-c1 for aux1.
 
 #### AUX2 / ABS ####
 
-| moteus r4.5/8/11 | Con | Aux | SPI  | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
-|------------------|-----|-----|------|-------------|-----|-------------|------|-----|
-| 3.3V (3)         | 1   |     |      |             |     |             |      |     |
-|                  | 2   | 0   |      |             | SCL |             | RX   | X   |
-|                  | 3   | 1   |      |             | SDA |             | TX   | X   |
-| GND (G)          | 4   |     |      |             |     |             |      |     |
-| DBG 1            |     | 2   |      |             |     |             |      | X   |
-| DBG 2            |     | 3   |      |             |     |             |      | X   |
+| moteus r4.5/8/11 | Con | Aux | SPI | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
+| ---------------- | --- | --- | --- | ----------- | --- | ----------- | ---- | --- |
+| 3.3V (3)         | 1   |     |     |             |     |             |      |     |
+|                  | 2   | 0   |     |             | SCL |             | RX   | X   |
+|                  | 3   | 1   |     |             | SDA |             | TX   | X   |
+| GND (G)          | 4   |     |     |             |     |             |      |     |
+| DBG 1            |     | 2   |     |             |     |             |      | X   |
+| DBG 2            |     | 3   |     |             |     |             |      | X   |
 
-| moteus c1/n1/x1  | Con | AUX | SPI  | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
-|------------------|-----|-----|------|-------------|-----|-------------|------|-----|
-| 5V (5)           | 1   |     |      |             |     |             |      |     |
-| 3.3V (3)         | 2   |     |      |             |     |             |      |     |
-| A                | 3   | 0   | CLK  | X           |     |             |      | X   |
-| B                | 4   | 1   | MISO | X           | SDA |             | RX   | X   |
-| C                | 5   | 2   | MOSI | X           | SCL | 4.1         | TX   | X   |
-| D                | 6   | 3   |      |             |     | 4.2         | RX   | X   |
-| GND (G)          | 7   |     |      |             |     |             |      |     |
+| moteus c1/n1/x1 | Con | AUX | SPI  | ADC/Sin/Cos | I2C | HW Quad/PWM | UART | 5VT |
+| --------------- | --- | --- | ---- | ----------- | --- | ----------- | ---- | --- |
+| 5V (5)          | 1   |     |      |             |     |             |      |     |
+| 3.3V (3)        | 2   |     |      |             |     |             |      |     |
+| A               | 3   | 0   | CLK  | X           |     |             |      | X   |
+| B               | 4   | 1   | MISO | X           | SDA |             | RX   | X   |
+| C               | 5   | 2   | MOSI | X           | SCL | 4.1         | TX   | X   |
+| D               | 6   | 3   |      |             |     | 4.2         | RX   | X   |
+| GND (G)         | 7   |     |      |             |     |             |      |     |
 
 NOTE: For moteus r4.5/8/11, DBG 1/2 are not present on the ABS
 connector, but are exposed pads on the circuit board.
@@ -1140,7 +1142,7 @@ Returns a bitfield, where bit 0 indicates whether encoder 0 is active,
 bit 1 indicates whether encoder 1 is active, etc.
 
 | Bit | Value             |
-|-----|-------------------|
+| --- | ----------------- |
 | 0   | Source 0 Theta    |
 | 1   | Source 0 Velocity |
 | 2   | Source 1 Theta    |
@@ -2170,9 +2172,33 @@ position information.
 
 ## `aux[12].uart.rs422` ##
 
-Enable the RS422 transceiver.  This is only valid for 'aux1', and
-requires that pin D and E (`aux1.pins.3` and `aux1.pins.4`) be
-used for UART.
+Enable the RS422 transceiver.  When enabled, the RS422 direction pins
+must be configured using `rs422_re_pin` and `rs422_de_pin`.
+
+## `aux[12].uart.rs422_re_pin` ##
+
+The AUX pin number (0-based) to use for the RS422 receive enable signal.
+Set to -1 to use the default hardcoded pin (if available). When set to a 
+valid AUX pin number (0-4), that AUX pin will be configured as a digital 
+output to control when the RS422 transceiver is in receive mode.
+
+## `aux[12].uart.rs422_de_pin` ##
+
+The AUX pin number (0-based) to use for the RS422 drive enable signal.
+Set to -1 to use the default hardcoded pin (if available). When set to a 
+valid AUX pin number (0-4), that AUX pin will be configured as a digital 
+output to control when the RS422 transceiver is in transmit mode.
+
+Example configuration for using AUX pins 3 and 4 for RS422 direction control:
+```
+conf set aux1.uart.mode 4          # CUI AMT21x RS422 encoder
+conf set aux1.uart.rs422 1         # Enable RS422
+conf set aux1.uart.rs422_re_pin 3  # Use AUX pin 3 for receive enable
+conf set aux1.uart.rs422_de_pin 4  # Use AUX pin 4 for drive enable
+conf set aux1.pins.1.mode 8        # Set pin 1 to UART RX
+conf set aux1.pins.2.mode 8        # Set pin 2 to UART TX
+# Note: pins 3 and 4 will be automatically configured as digital outputs
+```
 
 ## `aux[12].uart.cui_amt21_address` ##
 
@@ -2491,11 +2517,11 @@ The allowable maximum power for each moteus controller depends upon
 the input voltage and PWM switching frequency.  The below table gives
 the maximum allowable power at `servo.pwm_rate_hz=30000`.
 
-| Name       | Peak power   |                | High input power |
-|------------|--------------|----------------|------------------|
-| moteus-r4  | <= 30V 900W  | linear derated | >= 38V 400W      |
-| moteus-c1  | <= 28V 250W  | linear derated | >= 41V 150W      |
-| moteus-n1  | <= 36V 2000W | linear derated | >= 44V 1000W     |
+| Name      | Peak power   |                | High input power |
+| --------- | ------------ | -------------- | ---------------- |
+| moteus-r4 | <= 30V 900W  | linear derated | >= 38V 400W      |
+| moteus-c1 | <= 28V 250W  | linear derated | >= 41V 150W      |
+| moteus-n1 | <= 36V 2000W | linear derated | >= 44V 1000W     |
 
 For other values of `servo.pwm_rate_hz`, the allowable maximum power
 changes linearly with the PWM rate, so that at 15000, the maximum

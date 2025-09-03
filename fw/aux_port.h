@@ -97,12 +97,8 @@ class AuxPort {
       }
     }
 
-    if (hw_config_.options.rs422_re != NC) {
-      rs422_re_.emplace(hw_config_.options.rs422_re, 1);
-    }
-    if (hw_config_.options.rs422_de != NC) {
-      rs422_de_.emplace(hw_config_.options.rs422_de, 0);
-    }
+    // RS422 direction pins are now configured dynamically in HandleConfigUpdate
+    // based on the uart.rs422_re_pin and uart.rs422_de_pin configuration
 
     HandleConfigUpdate();
 
@@ -849,6 +845,11 @@ class AuxPort {
 
     if (rs422_de_) { rs422_de_->write(0); }
     if (rs422_re_) { rs422_re_->write(1); }
+    
+    // Reset configurable RS422 direction pins
+    rs422_de_.reset();
+    rs422_re_.reset();
+    
     aksim2_.reset();
     cui_amt21_.reset();
 
@@ -1157,6 +1158,56 @@ class AuxPort {
       if (!maybe_uart) {
         status_.error = aux::AuxError::kUartPinError;
         return;
+      }
+
+      // Configure RS422 direction pins
+      // If AUX pins are specified, use those; otherwise fall back to hardcoded pins
+      if (config_.uart.rs422_re_pin >= 0 && 
+          config_.uart.rs422_re_pin < static_cast<int8_t>(pin_count_)) {
+        // Check that the pin is not already configured for another use
+        if (config_.pins[config_.uart.rs422_re_pin].mode != aux::Pin::kNC) {
+          status_.error = aux::AuxError::kUartPinError;
+          return;
+        }
+        // Use configured AUX pin for RE
+        const auto re_pin = [&]() {
+          for (const auto& pin : hw_config_.pins) {
+            if (pin.number == config_.uart.rs422_re_pin) {
+              return pin.mbed;
+            }
+          }
+          return NC;
+        }();
+        if (re_pin != NC) {
+          rs422_re_.emplace(re_pin, 1);
+        }
+      } else if (hw_config_.options.rs422_re != NC) {
+        // Fall back to hardcoded pin
+        rs422_re_.emplace(hw_config_.options.rs422_re, 1);
+      }
+
+      if (config_.uart.rs422_de_pin >= 0 && 
+          config_.uart.rs422_de_pin < static_cast<int8_t>(pin_count_)) {
+        // Check that the pin is not already configured for another use
+        if (config_.pins[config_.uart.rs422_de_pin].mode != aux::Pin::kNC) {
+          status_.error = aux::AuxError::kUartPinError;
+          return;
+        }
+        // Use configured AUX pin for DE
+        const auto de_pin = [&]() {
+          for (const auto& pin : hw_config_.pins) {
+            if (pin.number == config_.uart.rs422_de_pin) {
+              return pin.mbed;
+            }
+          }
+          return NC;
+        }();
+        if (de_pin != NC) {
+          rs422_de_.emplace(de_pin, 0);
+        }
+      } else if (hw_config_.options.rs422_de != NC) {
+        // Fall back to hardcoded pin
+        rs422_de_.emplace(hw_config_.options.rs422_de, 0);
       }
 
       if (config_.uart.rs422 && (!rs422_de_ || !rs422_re_)) {

@@ -1,0 +1,70 @@
+#!/bin/bash
+# Build moteus firmware and automatically copy outputs to build_output folder
+
+set -e
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+REPO_DIR="$SCRIPT_DIR/../.."
+CACHE_DIR="$REPO_DIR/.cache"
+BUILD_OUTPUT_DIR="$REPO_DIR/build_output"
+
+mkdir -p "$CACHE_DIR"
+mkdir -p "$BUILD_OUTPUT_DIR"
+
+echo "============================================="
+echo "Building moteus firmware with Docker..."
+echo "============================================="
+
+docker build -t myimage \
+  --build-arg USER_ID=$(id -u) \
+  --build-arg GROUP_ID=$(id -g) "$SCRIPT_DIR" \
+  --platform linux/amd64
+
+docker run --rm \
+  --mount "type=bind,src=$CACHE_DIR,dst=/home/user/.cache" \
+  --mount "type=bind,src=$REPO_DIR,dst=/src" \
+  --workdir /src \
+  --platform linux/amd64 \
+  myimage bash -c "
+    echo 'Building firmware...'
+    ./tools/bazel build --config=target //:target
+    
+    echo 'Build complete! Copying outputs...'
+    
+    # Copy ELF files
+    if [ -f bazel-bin/fw/moteus.elf ]; then
+      cp bazel-bin/fw/moteus.elf /src/build_output/
+      echo 'Copied moteus.elf'
+    fi
+    
+    if [ -f bazel-bin/fw/can_bootloader.elf ]; then
+      cp bazel-bin/fw/can_bootloader.elf /src/build_output/
+      echo 'Copied can_bootloader.elf'
+    fi
+    
+    # Copy binary files
+    if [ -f bazel-bin/fw/moteus.08000000.bin ]; then
+      cp bazel-bin/fw/moteus.08000000.bin /src/build_output/
+      echo 'Copied moteus.08000000.bin'
+    fi
+    
+    if [ -f bazel-bin/fw/moteus.0800c000.bin ]; then
+      cp bazel-bin/fw/moteus.0800c000.bin /src/build_output/
+      echo 'Copied moteus.0800c000.bin'
+    fi
+    
+    if [ -f bazel-bin/fw/moteus.08010000.bin ]; then
+      cp bazel-bin/fw/moteus.08010000.bin /src/build_output/
+      echo 'Copied moteus.08010000.bin'
+    fi
+    
+    echo '============================================='
+    echo 'Build and copy complete!'
+    echo 'Output files are available in: build_output/'
+    ls -la /src/build_output/
+    echo '============================================='
+  "
+
+echo "Done! Check the build_output/ directory for your firmware files."
+
+

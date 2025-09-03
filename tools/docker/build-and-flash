@@ -1,0 +1,45 @@
+#!/bin/bash
+# Build moteus firmware and flash it to the device
+
+set -e
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+REPO_DIR="$SCRIPT_DIR/../.."
+CACHE_DIR="$REPO_DIR/.cache"
+
+mkdir -p "$CACHE_DIR"
+
+echo "============================================="
+echo "Building and flashing moteus firmware..."
+echo "============================================="
+echo "Make sure your ST-Link programmer is connected!"
+echo ""
+
+docker build -t myimage \
+  --build-arg USER_ID=$(id -u) \
+  --build-arg GROUP_ID=$(id -g) "$SCRIPT_DIR" \
+  --platform linux/amd64
+
+docker run --rm \
+  --mount "type=bind,src=$CACHE_DIR,dst=/home/user/.cache" \
+  --mount "type=bind,src=$REPO_DIR,dst=/src" \
+  --workdir /src \
+  --platform linux/amd64 \
+  --privileged \
+  --device-cgroup-rule='c 189:* rmw' \
+  -v /dev/bus/usb:/dev/bus/usb \
+  myimage bash -c "
+    echo 'Building firmware...'
+    ./tools/bazel build --config=target //:target
+    
+    echo 'Build complete! Starting flash process...'
+    echo 'Make sure your ST-Link is connected and the target is powered!'
+    
+    python3 fw/flash.py
+    
+    echo '============================================='
+    echo 'Build and flash complete!'
+    echo '============================================='
+  "
+
+echo "Done! Your moteus controller should now be running the new firmware."
