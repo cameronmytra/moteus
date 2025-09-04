@@ -340,8 +340,6 @@ struct Pin {
     kDigitalOutput,
     kAnalogInput,
     kPwmOut,
-    kRs422Re,
-    kRs422De,
 
     kLength,
   };
@@ -549,8 +547,6 @@ struct IsEnum<moteus::aux::Pin::Mode> {
         { P::kDigitalOutput, "digital_out" },
         { P::kAnalogInput, "analog_in" },
         { P::kPwmOut, "pwm_out" },
-        { P::kRs422Re, "rs422_re" },
-        { P::kRs422De, "rs422_de" },
       }};
   }
 };
