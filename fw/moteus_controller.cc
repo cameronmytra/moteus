@@ -427,8 +427,6 @@ aux::AuxHardwareConfig GetAux2HardwareConfig() {
              g_measured_hw_family == 2 ||
              g_measured_hw_family == 3) {
     aux_options.i2c_pullup = PA_12;
-    aux_options.rs422_re = PF_1;   // AUX2 pin 0 for RS422 RE
-    aux_options.rs422_de = PA_10;  // AUX2 pin 1 for RS422 DE
     return aux::AuxHardwareConfig{
       {{
           //          ADC#  CHN    I2C      SPI      USART    TIMER
