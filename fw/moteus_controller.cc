@@ -390,7 +390,8 @@ aux::AuxHardwareConfig GetAux1HardwareConfig() {
       {{
           //          ADC#  CHN    I2C      SPI      USART    TIMER
           { 0, PA_5,   -1,   0,    nullptr, SPI1,    nullptr, TIM2 },
-          { 0, PB_14,   0,   5,    nullptr, nullptr, nullptr, nullptr },
+          // Remove PB_14 from AUX1 to avoid conflict with AUX2 USART3 DE (PB14)
+          { 0, NC },
 
           { 1, PB_4,   -1,  -1,    nullptr, SPI1,    USART2,  TIM3 },
 

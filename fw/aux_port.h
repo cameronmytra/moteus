@@ -100,10 +100,8 @@ class AuxPort {
     if (hw_config_.options.rs422_re != NC) {
       rs422_re_.emplace(hw_config_.options.rs422_re, 1);
     }
-    if (hw_config_.options.rs422_de != NC) {
-      // If using USART hardware DE, we won't toggle this DigitalOut; leave low.
-      rs422_de_.emplace(hw_config_.options.rs422_de, 0);
-    }
+    // Do not configure RS-485 DE as a DigitalOut here. If hardware DE is used,
+    // the pin will be put into the USART alternate function later.
 
     HandleConfigUpdate();
 
@@ -848,8 +846,8 @@ class AuxPort {
     //
     // stream_write_outstanding_ = false;
 
-    if (rs422_de_) { rs422_de_->write(0); }
-    if (rs422_re_) { rs422_re_->write(1); }
+    // Ensure RS-485 RE/DE are not forced as GPIOs at reset. Hardware DE, if used,
+    // will be configured by the USART init. Otherwise leave them tri-stated.
     aksim2_.reset();
     cui_amt21_.reset();
 
@@ -1185,13 +1183,7 @@ class AuxPort {
         return;
       }
 
-      // If RS-485 is enabled but neither DE nor RE GPIOs are available, error.
-      if (config_.uart.rs422) {
-        if (!rs422_de_ && !rs422_re_) {
-          status_.error = aux::AuxError::kUartPinError;
-          return;
-        }
-      }
+      // RS-485 can operate via hardware DE without dedicated GPIOs.
 
       if (rs422_re_) { rs422_re_->write(!config_.uart.rs422); }
 
