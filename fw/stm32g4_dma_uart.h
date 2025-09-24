@@ -32,6 +32,12 @@ class Stm32G4DmaUart {
     PinName tx = NC;
     PinName rx = NC;
 
+    // Optional RS-485 hardware DE control via underlying USART.
+    PinName de = NC;
+    bool de_polarity_high = true;
+    uint8_t rs485_assert_bits = 0;
+    uint8_t rs485_deassert_bits = 6;
+
     int baud_rate = 115200;
 
     DMA_Channel_TypeDef* rx_dma = DMA1_Channel1;
@@ -44,6 +50,10 @@ class Stm32G4DmaUart {
                         Stm32Serial::Options s_options;
                         s_options.tx = options.tx;
                         s_options.rx = options.rx;
+                        s_options.de = options.de;
+                        s_options.de_polarity_high = options.de_polarity_high;
+                        s_options.rs485_assert_bits = options.rs485_assert_bits;
+                        s_options.rs485_deassert_bits = options.rs485_deassert_bits;
                         s_options.baud_rate = options.baud_rate;
                         return s_options;
                       }()) {

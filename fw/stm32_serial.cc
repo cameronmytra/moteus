@@ -179,8 +179,24 @@ Stm32Serial::Stm32Serial(const Options& options) {
   huart_.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 #endif
 
-  if (HAL_UART_Init(&huart_) != HAL_OK) {
-    mbed_die();
+  // If a DE pin is provided, initialize in RS-485 mode using hardware DE.
+  if (options.de != NC) {
+    // Configure the DE pin alternate function (RTS/DE for the selected UART).
+    pinmap_pinout(options.de, PinMap_UART_RTS);
+#if defined(TARGET_STM32G4)
+    const uint32_t polarity = options.de_polarity_high ? UART_DE_POLARITY_HIGH : UART_DE_POLARITY_LOW;
+    if (HAL_RS485Ex_Init(&huart_, polarity,
+                         options.rs485_deassert_bits,
+                         options.rs485_assert_bits) != HAL_OK) {
+      mbed_die();
+    }
+#else
+    if (HAL_UART_Init(&huart_) != HAL_OK) { mbed_die(); }
+#endif
+  } else {
+    if (HAL_UART_Init(&huart_) != HAL_OK) {
+      mbed_die();
+    }
   }
 
 #if defined(TARGET_STM32G4)

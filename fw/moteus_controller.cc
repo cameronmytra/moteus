@@ -380,11 +380,12 @@ aux::AuxHardwareConfig GetAux1HardwareConfig() {
     aux_options.i2c_pullup =
         g_measured_hw_family == 2 ? NC : PB_8;
 
-    // Family 2 has no RS422.
-    aux_options.rs422_re =
-        g_measured_hw_family == 2 ? NC : PB_10;
-    aux_options.rs422_de =
-        g_measured_hw_family == 2 ? NC : PB_11;
+    // Use hardware RS-485 DE on USART1
+    aux_options.rs422_re = NC;
+    aux_options.rs422_de = (g_measured_hw_family == 2) ? NC : PA_12;
+    // Fixed RS-485 mapping for AUX1 (USART1): TX=PC4, RX=PA10, DE=PA12
+    aux_options.rs485_tx = PC_4;
+    aux_options.rs485_rx = PA_10;
     return aux::AuxHardwareConfig{
       {{
           //          ADC#  CHN    I2C      SPI      USART    TIMER
@@ -426,19 +427,19 @@ aux::AuxHardwareConfig GetAux2HardwareConfig() {
   } else if (g_measured_hw_family == 1 ||
              g_measured_hw_family == 2 ||
              g_measured_hw_family == 3) {
-    aux_options.i2c_pullup = PA_12;
+    // Free PA12 for AUX1 DE; AUX2 has no dedicated I2C pullup on these families
+    aux_options.i2c_pullup = NC;
+    // Fixed RS-485 mapping for AUX2 (USART3): TX=PB10, RX=PB11, DE=PB14
+    aux_options.rs485_tx = PB_10;
+    aux_options.rs485_rx = PB_11;
+    aux_options.rs422_de = PB_14;
     return aux::AuxHardwareConfig{
       {{
           //          ADC#  CHN    I2C      SPI      USART    TIMER
           { 0, PF_1,    1,  10,    nullptr, SPI2,    nullptr, nullptr },
-
-          { 1, PA_10,  -1,  -1,    nullptr, SPI2,    USART1,  nullptr },
           { 1, PF_0,    0,  10,    I2C2,    nullptr, nullptr, nullptr },
-
           { 2, PA_11,  -1,  -1,    nullptr, SPI2,    nullptr, TIM4 },
-          { 2, PC_4,    1,   5,    I2C2,    nullptr, USART1,  nullptr },
-
-          { 3, PB_7,   -1,  -1,    nullptr, nullptr, USART1,  TIM4 },
+          // Intentionally omit PA_10, PC_4, PB_7 from AUX2 to avoid clobbering AUX1's USART1 pins
               }},
           aux_options,
           };

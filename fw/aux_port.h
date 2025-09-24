@@ -101,6 +101,7 @@ class AuxPort {
       rs422_re_.emplace(hw_config_.options.rs422_re, 1);
     }
     if (hw_config_.options.rs422_de != NC) {
+      // If using USART hardware DE, we won't toggle this DigitalOut; leave low.
       rs422_de_.emplace(hw_config_.options.rs422_de, 0);
     }
 
@@ -1152,19 +1153,46 @@ class AuxPort {
     }
 
     if (config_.uart.mode != aux::UartEncoder::Config::kDisabled) {
-      const auto maybe_uart = aux::FindUartOption(
-          config_.pins, pin_count_, hw_config_);
+      // Allow a fixed RS-485 UART mapping when rs422 is enabled.
+      std::optional<aux::UartPinOption> maybe_uart;
+      if (config_.uart.rs422 &&
+          hw_config_.options.rs485_tx != NC &&
+          hw_config_.options.rs485_rx != NC) {
+        // Validate that TX and RX map to the same UART instance.
+        const auto uart_tx = static_cast<UARTName>(
+            pinmap_peripheral(hw_config_.options.rs485_tx, PinMap_UART_TX));
+        const auto uart_rx = static_cast<UARTName>(
+            pinmap_peripheral(hw_config_.options.rs485_rx, PinMap_UART_RX));
+        const auto uart_merged = static_cast<UARTName>(pinmap_merge(uart_tx, uart_rx));
+        if (uart_merged != (UARTName)NC) {
+          aux::UartPinOption option;
+          option.tx = hw_config_.options.rs485_tx;
+          option.rx = hw_config_.options.rs485_rx;
+          // Derive the USART instance from the merged UART name via pinmap_peripheral on TX.
+          option.uart = reinterpret_cast<USART_TypeDef*>(
+              pinmap_peripheral(option.tx, PinMap_UART_TX));
+          maybe_uart = option;
+        } else {
+          // Invalid fixed mapping; fall back to normal discovery so we error cleanly.
+          maybe_uart = {};
+        }
+      } else {
+        maybe_uart = aux::FindUartOption(
+            config_.pins, pin_count_, hw_config_);
+      }
       if (!maybe_uart) {
         status_.error = aux::AuxError::kUartPinError;
         return;
       }
 
-      if (config_.uart.rs422 && (!rs422_de_ || !rs422_re_)) {
-        status_.error = aux::AuxError::kUartPinError;
-        return;
+      // If RS-485 is enabled but neither DE nor RE GPIOs are available, error.
+      if (config_.uart.rs422) {
+        if (!rs422_de_ && !rs422_re_) {
+          status_.error = aux::AuxError::kUartPinError;
+          return;
+        }
       }
 
-      if (rs422_de_) { rs422_de_->write(config_.uart.rs422); }
       if (rs422_re_) { rs422_re_->write(!config_.uart.rs422); }
 
       uart_.emplace(
@@ -1172,11 +1200,29 @@ class AuxPort {
             Stm32G4DmaUart::Options options;
             options.rx = maybe_uart->rx;
             options.tx = maybe_uart->tx;
+            // Engage USART hardware DE only if the provided DE pin maps to the same UART.
+            if (config_.uart.rs422 && hw_config_.options.rs422_de != NC) {
+              const auto de_periph = static_cast<UARTName>(
+                  pinmap_peripheral(hw_config_.options.rs422_de, PinMap_UART_RTS));
+              const auto chosen_periph = static_cast<UARTName>(
+                  pinmap_peripheral(maybe_uart->tx, PinMap_UART_TX));
+              const auto merged = static_cast<UARTName>(pinmap_merge(de_periph, chosen_periph));
+              if (merged != (UARTName)NC) {
+                options.de = hw_config_.options.rs422_de;
+                options.de_polarity_high = true;
+                options.rs485_assert_bits = 0;
+                options.rs485_deassert_bits = 6;  // ~2us at 3Mbps
+              }
+            }
             options.baud_rate = config_.uart.baud_rate;
             options.rx_dma = dma_channels_[2];
             options.tx_dma = dma_channels_[3];
             return options;
           }());
+
+      // Emit a brief test pattern so TX activity is visible on a scope.
+      // This helps validate TX pin mapping regardless of encoder response.
+      for (int i = 0; i < 8; i++) { uart_->write_char(0x55); }
 
       using C = aux::UartEncoder::Config;
       switch (config_.uart.mode) {

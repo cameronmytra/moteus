@@ -19,9 +19,13 @@ import platform
 import subprocess
 import sys
 import tempfile
+import os
 
 
-BINPREFIX = '' if platform.machine().startswith('arm') else 'arm-none-eabi-'
+if platform.system() == 'Darwin':
+    BINPREFIX = 'arm-none-eabi-'
+else:
+    BINPREFIX = '' if platform.machine().startswith('arm') else 'arm-none-eabi-'
 
 OBJCOPY = BINPREFIX + 'objcopy'
 OPENOCD = 'openocd -f interface/stlink.cfg -f target/stm32g4x.cfg '
@@ -29,13 +33,24 @@ OPENOCD = 'openocd -f interface/stlink.cfg -f target/stm32g4x.cfg '
 
 def main():
     parser = argparse.ArgumentParser()
+
+    # Prefer artifacts from build_output if present, otherwise fall back to Bazel outputs
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    build_out_dir = os.path.join(repo_root, 'build_output')
+    build_out_moteus = os.path.join(build_out_dir, 'moteus.elf')
+    build_out_bootloader = os.path.join(build_out_dir, 'can_bootloader.elf')
+    bazel_moteus = os.path.join(repo_root, 'bazel-out', 'stm32g4-opt', 'bin', 'fw', 'moteus.elf')
+    bazel_bootloader = os.path.join(repo_root, 'bazel-out', 'stm32g4-opt', 'bin', 'fw', 'can_bootloader.elf')
+
+    default_moteus_elffile = build_out_moteus if os.path.exists(build_out_moteus) else bazel_moteus
+    default_bootloader_elffile = build_out_bootloader if os.path.exists(build_out_bootloader) else bazel_bootloader
     parser.add_argument('--erase', action='store_true')
     parser.add_argument(
         'elffile', nargs='?',
-        default='bazel-out/stm32g4-opt/bin/fw/moteus.elf')
+        default=default_moteus_elffile)
     parser.add_argument(
         'bootloader', nargs='?',
-        default='bazel-out/stm32g4-opt/bin/fw/can_bootloader.elf')
+        default=default_bootloader_elffile)
 
     args = parser.parse_args()
 

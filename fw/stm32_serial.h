@@ -31,6 +31,14 @@ class Stm32Serial {
     PinName tx = NC;
     PinName rx = NC;
 
+    // Optional RS-485 DE control using the USART's hardware DE pin.
+    // If 'de' is non-NC, RS-485 mode will be initialized with the
+    // given polarity and assertion/deassertion delays (in bit-times).
+    PinName de = NC;
+    bool de_polarity_high = true;
+    uint8_t rs485_assert_bits = 0;
+    uint8_t rs485_deassert_bits = 6;
+
     int baud_rate = 115200;
   };
 

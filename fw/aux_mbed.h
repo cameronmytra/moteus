@@ -40,6 +40,9 @@ struct AuxExtraOptions {
   PinName i2c_pullup = NC;
   PinName rs422_re = NC;
   PinName rs422_de = NC;
+  // Optional fixed RS-485 UART mapping per AUX port when rs422 is enabled.
+  PinName rs485_tx = NC;
+  PinName rs485_rx = NC;
 };
 
 struct AuxHardwareConfig {
@@ -625,8 +628,8 @@ std::optional<UartPinOption> FindUartOption(const PinArray& pin_array,
           break;
         } else if (pinmap_find_peripheral(mbed_pin, PinMap_UART_RX) == int_uart) {
           if (result.rx != NC) { return {}; }
-
-          result.rx = pin->mbed;
+          // Use the specific alternate function-capable pin variant.
+          result.rx = mbed_pin;
           break;
         }
       }
