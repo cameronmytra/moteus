@@ -99,6 +99,15 @@ bool DetectGateDriver(
 }
 
 FamilyAndVersion DetectMoteusFamily(MillisecondTimer* timer) {
+  // Hard override: force moteus-n1 (family 1) and skip detection using PB10/PB11.
+  {
+    FamilyAndVersion forced;
+    (void)timer;
+    forced.family = 1;
+    forced.hw_version = 0;
+    forced.hw_pins = 0;
+    return forced;
+  }
   FamilyAndVersion result;
   result.family = 0;
 
